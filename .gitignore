@@ -1,0 +1,11 @@
+.env
+data/*
+!data/.gitkeep
+backend/data/
+__pycache__/
+.venv/
+.pytest_cache/
+node_modules/
+.expo/
+mobile/ios/
+mobile/android/

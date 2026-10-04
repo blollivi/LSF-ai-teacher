@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "set -a && . ./.env && set +a && cd mobile && EXPO_PUBLIC_DEV_API_URL=http://localhost:8010 EXPO_PUBLIC_DEV_API_TOKEN=\"$APP_TOKEN\" npx expo start --web"],
+      "port": 8081
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd backend && uv run --env-file ../.env uvicorn lsf.app:app --reload --host 0.0.0.0 --port 8010"],
+      "port": 8010
+    }
+  ]
+}
