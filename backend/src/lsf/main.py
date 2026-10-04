@@ -16,7 +16,7 @@ from .elix import ElixClient
 from .jobs import ThemeBuilder
 from .llm import LLM, OpenAILLM
 from .media import MediaStore
-from .models import Item, Theme, ThemeItem
+from .models import Candidate, Item, Theme, ThemeItem
 
 log = logging.getLogger(__name__)
 
@@ -107,6 +107,16 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None, http: h
             if existing:  # retry a failed build (e.g. the OpenAI key was wrong)
                 existing.status, existing.error, existing.rounds = "generating", None, 0
                 s.add(existing)
+                # Candidates that crashed (not judged) get another chance instead of being excluded forever.
+                for c in s.exec(
+                    select(Candidate).where(
+                        Candidate.theme_id == existing.id,
+                        Candidate.status == "rejected",
+                        col(Candidate.reason).startswith("erreur"),
+                    )
+                ):
+                    c.status, c.reason = "pending", ""
+                    s.add(c)
                 s.commit()
                 b.enqueue(existing.id)  # type: ignore[arg-type]
                 return summary(existing, b)
@@ -150,8 +160,6 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None, http: h
 
     @app.get("/themes/{theme_id}/report", dependencies=[Depends(auth)])
     def report(theme_id: int):
-        from .models import Candidate
-
         with session(engine) as s:
             cands = s.exec(select(Candidate).where(Candidate.theme_id == theme_id).order_by(Candidate.id)).all()
         return [{"word": c.word, "hint": c.hint, "status": c.status, "reason": c.reason, "meaning_id": c.meaning_id} for c in cands]
